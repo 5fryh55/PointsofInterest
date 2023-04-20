@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <link rel='stylesheet' href='https://unpkg.com/leaflet@1.7.1/dist/leaflet.css'/>
+        <script type='text/javascript' src='https://unpkg.com/leaflet@1.7.1/dist/leaflet.js'></script>
         <script type="module" src="index.js"></script>
     </head>
     <body>
@@ -14,7 +16,12 @@
         Enter region:
         <input id="region"/>
         <input type="button" value="Search" id="regionSearch"/>
+        <input type="button" value="Display region POI on map" id="locateRegionPoi"/>
+        <input type="button" value="Display all POI on map" id="locateAll"/>
         <br>
+        <br>
+        <h1>POI map</h1>
+        <div id="map" style="width: 800px; height: 600px;"> </div>
         <br>
         <div id="results"></div>
     </body>

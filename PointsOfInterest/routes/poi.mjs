@@ -14,6 +14,17 @@ pointsofinterestRouter.get("/region/:region", (req, res) =>{
     }
 });
 
+pointsofinterestRouter.get("/all", (req, res) =>{
+    try{
+        const stmt = db.prepare(`SELECT * FROM pointsofinterest`);
+        const results = stmt.all();
+        res.json(results);
+    }
+    catch(error){
+        res.status(500).json({error:error});
+    }
+});
+
 pointsofinterestRouter.post("/recommend/:id", (req, res) =>{
     try{
         const stmt = db.prepare(`UPDATE pointsofinterest SET recommendations = recommendations + ? WHERE id = ?`);
@@ -32,8 +43,10 @@ pointsofinterestRouter.post("/recommend/:id", (req, res) =>{
 
 pointsofinterestRouter.post("/create", (req, res)=>{
     try{
-        if(req.body.name == "" || req.body.type == "" || req.body.country == "" 
-        || req.body.region == "" || req.body.lon== "" || req.body.lat == "" || req.body.description == ""){
+        if(req.body.name == "" || req.body.name == null || req.body.type == "" || req.body.type == null ||
+        req.body.country == "" || req.body.country == null || req.body.region == "" || req.body.region == null ||
+        req.body.lon== "" || req.body.lon == null || req.body.lat == "" || req.body.lat == null ||
+        req.body.description == "" || req.body.description == null){
             res.status(400).json({error:"Error blank fields"});
         }
         else{
@@ -57,13 +70,4 @@ pointsofinterestRouter.post("/create", (req, res)=>{
         } 
 });
 
-
-pointsofinterestRouter.post("/test", (req, res)=>{
-    try{
-        console.log(req.body.name);
-    }
-    catch(error){
-        res.status(500).json({error:error});
-    } 
-});
 export default pointsofinterestRouter;
