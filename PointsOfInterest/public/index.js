@@ -1,8 +1,41 @@
+const loggedIN = await fetch("/users/login");
+const loggedInUser = loggedIN.json();
+if(!loggedInUser){
+    userBanner();
+}else{
+    loginForm();
+}
+
 const map = L.map("map");
 const attrib="Map data copyright OpenStreetMap contributors, Open Database License";
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
             { attribution: attrib } ).addTo(map);
 map.setView([50.909698,-1.404351], 14);
+
+
+
+async function userBanner(){
+    document.getElementById("user").innerHTML = (`Logged in as: ${loggedInUser.username} <input type="button" value="Logout" id="logoutButton"/>`);
+    document.getElementById('logoutButton').addEventListener('click', () =>{
+        logoutUser();
+    });
+};
+
+async function loginForm(){
+    document.getElementById("user").innerHTML = (`Enter login info: 
+    <form>
+        Username:
+        <input id="username">
+        Password:
+        <input id="password" type="password">
+        <input type="button" value="Login" id="loginButton">
+    </form>`);
+    document.getElementById('loginButton').addEventListener('click', () =>{
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    loginUser(username, password);
+    });
+};
 
 async function showAllPOI(){
     const response = await fetch(`/poi/all`);
@@ -163,6 +196,72 @@ async function addPoiToMap(e){
     }   
 };
 
+async function loginUser(username, password){
+    const user = {
+        username:username,
+        password:password
+    }
+    console.log(`USER: ${user.username}, ${user.password}`)
+    const response = await fetch('/users/login', {
+        method: 'POST', 
+        headers: {
+            'Content-Type':'application/json'
+        },
+        body: JSON.stringify(user)
+    });
+    if(response.status == 200){
+        alert("Logging in...");
+        getUser();
+    }
+    else{
+        alert("Incorrect Details.");
+    } 
+};
+
+async function getUser(){
+    const response = await fetch("/users/login");
+    const user = await response.json();
+    document.getElementById("user").innerHTML = (`Logged in as: ${user.username} <input type="button" value="Logout" id="logoutButton"/>`);
+    document.getElementById('logoutButton').addEventListener('click', () =>{
+        logoutUser();
+    });
+};
+
+async function logoutUser(){
+    console.log("logging out user")
+    const usercheck = await fetch("/users/login");
+    const user = await usercheck.json();
+    
+    const response = await fetch('/users/logout', {
+        method: 'POST', 
+        headers: {
+            'Content-Type':'application/json'
+        },
+        body: JSON.stringify(user)
+    });
+    const userLogout = await response.json();
+    console.log(userLogout);
+    if(userLogout){
+        alert("User logged out.")
+        document.getElementById("user").innerHTML = (`Enter login info: 
+        <form>
+            Username:
+            <input id="username">
+            Password:
+            <input id="password" type="password">
+            <input type="button" value="Login" id="loginButton">
+        </form>`);
+        document.getElementById('loginButton').addEventListener('click', () =>{
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        loginUser(username, password);
+    });
+    }
+    else{
+        alert("?");
+    }
+};
+
 document.getElementById('locateRegionPoi').addEventListener('click', () =>{
     const region = document.getElementById('region').value;
     regionPOIs(region);
@@ -180,3 +279,6 @@ document.getElementById('regionSearch').addEventListener('click', () =>{
 map.on("click", e => {
     addPoiToMap(e)
 });
+
+
+

@@ -1,6 +1,7 @@
 import express from 'express';
 import Database from "better-sqlite3"; 
-const db = new Database('C:\\Users\\harry\\OneDrive\\University\\PointsOfInterest\\PointsofInterest\\PointsOfInterest\\pointsofinterest.db');
+
+const db = new Database('pointsofinterest.db');
 const pointsofinterestRouter = express.Router();
 
 pointsofinterestRouter.get("/region/:region", (req, res) =>{
