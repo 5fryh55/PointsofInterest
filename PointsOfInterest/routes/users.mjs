@@ -31,7 +31,6 @@ usersRouter.post('/login', (req, res) =>{
             req.session.username = req.body.username;
             res.json({"username": req.body.username})
             res.status(200);
-            console.log(req.session.username);
         }
         else {
             res.status(401).json({error: "Incorrect details!"});
@@ -43,8 +42,6 @@ usersRouter.post('/login', (req, res) =>{
 });
 
 usersRouter.post('/logout', (req, res) =>{
-    console.log(`logging out: ${req.body.username}`);
-    console.log(req.session);
     req.session = null;
     res.json({'success': 1});
 });

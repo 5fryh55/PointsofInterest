@@ -1,9 +1,12 @@
-const loggedIN = await fetch("/users/login");
-const loggedInUser = loggedIN.json();
-if(!loggedInUser){
-    userBanner();
-}else{
-    loginForm();
+isUserLoggedIn();
+
+async function isUserLoggedIn(){
+    const loggedInUser = await getUser();
+    if(loggedInUser.username == null){
+        loginForm();   
+    }else{
+        userBanner(loggedInUser);
+    }
 }
 
 const map = L.map("map");
@@ -12,9 +15,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
             { attribution: attrib } ).addTo(map);
 map.setView([50.909698,-1.404351], 14);
 
-
-
-async function userBanner(){
+async function userBanner(loggedInUser){
     document.getElementById("user").innerHTML = (`Logged in as: ${loggedInUser.username} <input type="button" value="Logout" id="logoutButton"/>`);
     document.getElementById('logoutButton').addEventListener('click', () =>{
         logoutUser();
@@ -51,58 +52,66 @@ async function showAllPOI(){
 async function regionSearch(region){
     const response = await fetch(`/poi/region/${region}`);
     const pointsofinterest = await response.json();
+    if(pointsofinterest.length==0){
+        alert("Nothing found")
+    }
+    else{
+        pointsofinterest.forEach(point => {
+            const node1 = document.createElement("p");
+            const text1 = document.createTextNode(`ID: ${point.id} Name ${point.name} Type: ${point.type} Desription: ${point.description} Recommendations: ${point.recommendations}`);
+            const recommendButton = document.createElement("input");
+            const locateButton = document.createElement("input");
+            recommendButton.setAttribute("type", "button");
+            recommendButton.setAttribute("value", `Recommend`)
+            recommendButton.setAttribute("id", `${point.id}`);
+            locateButton.setAttribute("type", "button");
+            locateButton.setAttribute("value", `Locate on map`)
+            locateButton.setAttribute("id", `${point.id}`);
+            node1.appendChild(text1);
+            document.getElementById("results").appendChild(node1);
+            document.getElementById("results").appendChild(recommendButton);
+            document.getElementById("results").appendChild(locateButton);
     
-    pointsofinterest.forEach(point => {
-        const node1 = document.createElement("p");
-        const text1 = document.createTextNode(`ID: ${point.id} Name ${point.name} Type: ${point.type} Desription: ${point.description} Recommendations: ${point.recommendations}`);
-        const recommendButton = document.createElement("input");
-        const locateButton = document.createElement("input");
-        recommendButton.setAttribute("type", "button");
-        recommendButton.setAttribute("value", `Recommend`)
-        recommendButton.setAttribute("id", `${point.id}`);
-        locateButton.setAttribute("type", "button");
-        locateButton.setAttribute("value", `Locate on map`)
-        locateButton.setAttribute("id", `${point.id}`);
-        node1.appendChild(text1);
-        document.getElementById("results").appendChild(node1);
-        document.getElementById("results").appendChild(recommendButton);
-        document.getElementById("results").appendChild(locateButton);
-
-        recommendButton.addEventListener("click", async(e) => {
-            const recommend = {id:point.id, qty:1};
-            const response = await fetch (`/poi/recommend/${recommend.id}`,{
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(recommend)
+            recommendButton.addEventListener("click", async(e) => {
+                const recommend = {id:point.id, qty:1};
+                const response = await fetch (`/poi/recommend/${recommend.id}`,{
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(recommend)
+            });
+                if(response.status == 200){
+                    alert("POI recommended.");                
+                }
+                else{
+                    alert("Error");
+                }
+            }); 
+            locateButton.addEventListener("click", async(e) => {
+                poiLocate(point);        
+            });
         });
-            if(response.status == 200){
-                alert("POI recommended.");                
-            }
-            else{
-                alert("Error");
-            }
-        }); 
-        locateButton.addEventListener("click", async(e) => {
-            poiLocate(point);        
-        });
-    });
+    }
 };
 
 async function regionPOIs(region){
     const response = await fetch(`/poi/region/${region}`);
     const pointsofinterest = await response.json();
-    map.setView([pointsofinterest[0].lat, pointsofinterest[0].lon], 10);
-    pointsofinterest.forEach(point => {
-        const marker = L.marker([point.lat, point.lon]).addTo(map);
-        const text = (`Name: ${point.name}, Description: ${point.description}`)
-        marker.bindPopup(text);
-    });
+    if(pointsofinterest.length==0){
+        alert("Nothing found")
+    }
+    else{
+        map.setView([pointsofinterest[0].lat, pointsofinterest[0].lon], 10);
+        pointsofinterest.forEach(point => {
+            const marker = L.marker([point.lat, point.lon]).addTo(map);
+            const text = (`Name: ${point.name}, Description: ${point.description}`)
+            marker.bindPopup(text);
+        });
+    }
 };
 
 async function poiLocate(point){
-    console.log(point.lat, point.lon);
     map.setView([point.lat, point.lon], 13);
     const marker = L.marker([point.lat, point.lon]).addTo(map);
     const text = (`Name: ${point.name}, Description: ${point.description}`)
@@ -158,42 +167,47 @@ async function addPoiToMap(e){
     nameAdd.setAttribute("value", "Submit");
     formPOI.appendChild(submit); */
     
-    const name = prompt("Enter name");
-    const type = prompt("Enter type");
-    const country = prompt("Enter country");
-    const region = prompt("Enter region");
-    const lon = e.latlng.lng;
-    const lat = e.latlng.lat;
-    const description = prompt("Enter description");
-
-    const poi = {
-        name: name, 
-        type: type, 
-        country: country,
-        region: region,
-        lon: lon,
-        lat: lat, 
-        description: description,
-        recommendations:0
-    };
-
-    const response = await fetch("/poi/create/", {
-        method: 'POST', 
-        headers: {
-            'Content-Type':'application/json'
-        },
-        body: JSON.stringify(poi)
-    });
-    if(response.status == 400){
-        alert("Error making new poi, blank entries.");
+    const loggedInUser = await getUser();
+    if(loggedInUser.username == null){
+        alert("Please log in to add POI to map")   
+    }else{
+        const name = prompt("Enter name");
+        const type = prompt("Enter type");
+        const country = prompt("Enter country");
+        const region = prompt("Enter region");
+        const lon = e.latlng.lng;
+        const lat = e.latlng.lat;
+        const description = prompt("Enter description");
+    
+        const poi = {
+            name: name, 
+            type: type, 
+            country: country,
+            region: region,
+            lon: lon,
+            lat: lat, 
+            description: description,
+            recommendations:0
+        };
+    
+        const response = await fetch("/poi/create/", {
+            method: 'POST', 
+            headers: {
+                'Content-Type':'application/json'
+            },
+            body: JSON.stringify(poi)
+        });
+        if(response.status == 400){
+            alert("Error making new poi, blank entries.");
+        }
+        else{
+            alert("Added POI");
+            const newpos = [e.latlng.lat, e.latlng.lng];
+            const newMark = L.marker(newpos).addTo(map);
+            const text = (`Name: ${name}, Description: ${description}`)
+            newMark.bindPopup(text);
+        }       
     }
-    else{
-        alert("Added POI");
-        const newpos = [e.latlng.lat, e.latlng.lng];
-        const newMark = L.marker(newpos).addTo(map);
-        const text = (`Name: ${name}, Description: ${description}`)
-        newMark.bindPopup(text);
-    }   
 };
 
 async function loginUser(username, password){
@@ -201,7 +215,6 @@ async function loginUser(username, password){
         username:username,
         password:password
     }
-    console.log(`USER: ${user.username}, ${user.password}`)
     const response = await fetch('/users/login', {
         method: 'POST', 
         headers: {
@@ -211,7 +224,7 @@ async function loginUser(username, password){
     });
     if(response.status == 200){
         alert("Logging in...");
-        getUser();
+        userBanner(user);
     }
     else{
         alert("Incorrect Details.");
@@ -221,14 +234,10 @@ async function loginUser(username, password){
 async function getUser(){
     const response = await fetch("/users/login");
     const user = await response.json();
-    document.getElementById("user").innerHTML = (`Logged in as: ${user.username} <input type="button" value="Logout" id="logoutButton"/>`);
-    document.getElementById('logoutButton').addEventListener('click', () =>{
-        logoutUser();
-    });
+    return user;
 };
 
 async function logoutUser(){
-    console.log("logging out user")
     const usercheck = await fetch("/users/login");
     const user = await usercheck.json();
     
@@ -240,22 +249,9 @@ async function logoutUser(){
         body: JSON.stringify(user)
     });
     const userLogout = await response.json();
-    console.log(userLogout);
     if(userLogout){
         alert("User logged out.")
-        document.getElementById("user").innerHTML = (`Enter login info: 
-        <form>
-            Username:
-            <input id="username">
-            Password:
-            <input id="password" type="password">
-            <input type="button" value="Login" id="loginButton">
-        </form>`);
-        document.getElementById('loginButton').addEventListener('click', () =>{
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        loginUser(username, password);
-    });
+        loginForm();
     }
     else{
         alert("?");

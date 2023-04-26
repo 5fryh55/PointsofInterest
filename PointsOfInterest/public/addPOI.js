@@ -1,3 +1,13 @@
+checkUser();
+
+async function checkUser(){
+    const response = await fetch("/users/login");
+    const user = await response.json();
+    if(user.username == null){
+        document.getElementById("addPOIForm").innerHTML = ("You need to be logged in to view this page, go back home.");   
+    }
+};
+
 async function addNewPointOfInterest(name, type, country, region, lon, lat, description){
     const poi = {
         name: name, 
@@ -22,6 +32,7 @@ async function addNewPointOfInterest(name, type, country, region, lon, lat, desc
       alert("Added POI");
     }    
 };
+
 document.getElementById('addPointOfInterest').addEventListener('click', () =>{
     const name = document.getElementById('nameAdd').value;
     const type = document.getElementById('typeAdd').value;

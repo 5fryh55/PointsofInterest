@@ -11,4 +11,4 @@ app.use(express.json());
 app.use('/poi', pointsofinterestRouter);
 app.use('/users', usersRouter);
 
-app.listen(1010);
+app.listen(3000);
