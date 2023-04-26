@@ -200,7 +200,7 @@ async function addPoiToMap(e){
         if(response.status == 400){
             alert("Error making new poi, blank entries.");
         }
-        else{
+        if(response.status==200){
             alert("Added POI");
             const newpos = [e.latlng.lat, e.latlng.lng];
             const newMark = L.marker(newpos).addTo(map);

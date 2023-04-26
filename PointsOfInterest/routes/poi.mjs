@@ -65,6 +65,7 @@ pointsofinterestRouter.post("/create", (req, res)=>{
                 );
             const info = stmt.run(req.body.name, req.body.type, req.body.country, req.body.region, req.body.lon, req.body.lat, req.body.description, req.body.recommendations);
             res.json({id: info.lastInsertRowId}); 
+            res.status(200);
         }}
         catch(error){
             res.status(500).json({error:error});

@@ -28,8 +28,12 @@ async function addNewPointOfInterest(name, type, country, region, lon, lat, desc
     });
     if (response.status == 400){
         alert("Blank fields.");
-    }else{
-      alert("Added POI");
+    }
+    if(response.status==200){
+        alert("Added POI");
+    }
+    if(response.status==500){
+        alert("Error.")
     }    
 };
 

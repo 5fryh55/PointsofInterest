@@ -33,11 +33,11 @@ usersRouter.post('/login', (req, res) =>{
             res.status(200);
         }
         else {
-            res.status(401).json({error: "Incorrect details!"});
+            res.status(400).json({error: "Incorrect details!"});
         }
     }
     else {
-        res.status(400).json({error: "User not found!"});
+        res.status(404).json({error: "User not found!"});
     }
 });
 
