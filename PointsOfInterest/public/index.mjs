@@ -43,9 +43,7 @@ async function showAllPOI(){
     const pointsofinterest = await response.json();
 
     pointsofinterest.forEach(point => {
-        const marker = L.marker([point.lat, point.lon]).addTo(map);
-        const text = (`Name: ${point.name}, Description: ${point.description}`)
-        marker.bindPopup(text);
+        createMarkers(point);
     });
 };
 
@@ -61,39 +59,111 @@ async function regionSearch(region){
             const text1 = document.createTextNode(`ID: ${point.id} Name ${point.name} Type: ${point.type} Desription: ${point.description} Recommendations: ${point.recommendations}`);
             const recommendButton = document.createElement("input");
             const locateButton = document.createElement("input");
+            const reviewBox = document.createElement("input");
+            const reviewButton = document.createElement("input");
+
             recommendButton.setAttribute("type", "button");
             recommendButton.setAttribute("value", `Recommend`)
             recommendButton.setAttribute("id", `${point.id}`);
             locateButton.setAttribute("type", "button");
             locateButton.setAttribute("value", `Locate on map`)
             locateButton.setAttribute("id", `${point.id}`);
+            reviewBox.setAttribute("id", `reviewBox${point.id}`);
+            reviewButton.setAttribute("type", "button");
+            reviewButton.setAttribute("value", "Review");
+            reviewButton.setAttribute("id", `${point.id}`);
+
             node1.appendChild(text1);
             document.getElementById("results").appendChild(node1);
             document.getElementById("results").appendChild(recommendButton);
             document.getElementById("results").appendChild(locateButton);
+            document.getElementById("results").appendChild(reviewBox);
+            document.getElementById("results").appendChild(reviewButton);
     
             recommendButton.addEventListener("click", async(e) => {
-                const recommend = {id:point.id, qty:1};
-                const response = await fetch (`/poi/recommend/${recommend.id}`,{
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(recommend)
-            });
-                if(response.status == 200){
-                    alert("POI recommended.");                
-                }
-                else{
-                    alert("Error");
-                }
+                recommendPOI(point);
             }); 
             locateButton.addEventListener("click", async(e) => {
                 poiLocate(point);        
             });
+            reviewButton.addEventListener("click", async(e) =>{
+                const id = point.id;
+                const review = document.getElementById(`reviewBox${point.id}`).value;
+                reviewPOI(point, id, review)
+            });
         });
     }
 };
+
+async function recommendPOI(point){
+    const recommend = {id:point.id, qty:1};
+    const response = await fetch (`/poi/recommend/${recommend.id}`,{
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(recommend)
+});
+    if(response.status == 200){
+        alert("POI recommended.");
+        document.getElementById("results").innerHTML = null;   
+        regionSearch(point.region);              
+    }
+    else{
+        alert("Error");
+    }
+};
+
+async function reviewPOI(point, id, review){
+    const user = await getUser();
+    if(user.username == null){
+        alert("You need to be logged in to leave a review.");   
+    }else{
+        const region = point.region;
+        const reviewObject = {id: id, review: review};
+        const response = await fetch (`/poi/review/${reviewObject.id}`,{
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(reviewObject)
+        });
+        if (response.status == 400){
+            alert("Enter a review.")
+        }
+        if(response.status == 200){
+            alert("POI reviewed.");
+            document.getElementById("results").innerHTML = null;   
+            regionSearch(region);              
+        }
+    
+    }
+};
+
+async function createMarkers(point){
+        const marker = L.marker([point.lat, point.lon]).addTo(map);
+
+        const node = document.createElement("p");
+        const text = document.createTextNode(`Name: ${point.name}, Description: ${point.description}`);
+        const reviewButton = document.createElement("input");
+        reviewButton.setAttribute("type", "button");
+        reviewButton.setAttribute("value", "Review");
+        reviewButton.setAttribute("id", `${point.id}`);
+        node.appendChild(text);
+        node.appendChild(reviewButton)
+        marker.bindPopup(node);
+
+        reviewButton.addEventListener("click", async(e) =>{
+            const loggedInUser = await getUser();
+            if(loggedInUser.username == null){
+                alert("Please log in to leave a review")   
+            }else{
+            const id = point.id;
+            const review = prompt("Enter review");
+            reviewPOI(point, id, review)
+            }
+        });
+}
 
 async function regionPOIs(region){
     const response = await fetch(`/poi/region/${region}`);
@@ -103,19 +173,15 @@ async function regionPOIs(region){
     }
     else{
         map.setView([pointsofinterest[0].lat, pointsofinterest[0].lon], 10);
-        pointsofinterest.forEach(point => {
-            const marker = L.marker([point.lat, point.lon]).addTo(map);
-            const text = (`Name: ${point.name}, Description: ${point.description}`)
-            marker.bindPopup(text);
+        pointsofinterest.forEach(point =>{
+            createMarkers(point);
         });
     }
 };
 
 async function poiLocate(point){
     map.setView([point.lat, point.lon], 13);
-    const marker = L.marker([point.lat, point.lon]).addTo(map);
-    const text = (`Name: ${point.name}, Description: ${point.description}`)
-    marker.bindPopup(text);
+    createMarkers(point);
 };
 
 async function addPoiToMap(e){
@@ -162,10 +228,10 @@ async function addPoiToMap(e){
     nameAdd.setAttribute("value", "Enter Description");
     formPOI.appendChild(descriptionAdd);
 
-    const submit = document.createElement("input");
-    nameAdd.setAttribute("type", "submit");
+    const submitButton = document.createElement("input");
+    nameAdd.setAttribute("type", "button");
     nameAdd.setAttribute("value", "Submit");
-    formPOI.appendChild(submit); */
+    formPOI.appendChild(submitButton); */
     
     const loggedInUser = await getUser();
     if(loggedInUser.username == null){
@@ -201,11 +267,8 @@ async function addPoiToMap(e){
             alert("Error making new poi, blank entries.");
         }
         if(response.status==200){
+            createMarkers(poi);
             alert("Added POI");
-            const newpos = [e.latlng.lat, e.latlng.lng];
-            const newMark = L.marker(newpos).addTo(map);
-            const text = (`Name: ${name}, Description: ${description}`)
-            newMark.bindPopup(text);
         }       
     }
 };

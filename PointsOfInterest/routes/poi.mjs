@@ -72,4 +72,21 @@ pointsofinterestRouter.post("/create", (req, res)=>{
         } 
 });
 
+pointsofinterestRouter.post("/review/:id", (req, res) =>{
+    try{
+        if(req.body.review == "" || req.body.review == null){
+            res.status(400).json({error:"Error, blank review"});
+        }
+        else{
+            const stmt = db.prepare("INSERT into poi_reviews(poi_id, review) VALUES(?,?)");
+            const info = stmt.run(req.params.id, req.body.review);
+            res.json({id: info.lastInsertRowid});
+            res.status(200);
+        }
+    }
+    catch(error){
+        res.status(500).json({error:error});
+    }
+});
+
 export default pointsofinterestRouter;
