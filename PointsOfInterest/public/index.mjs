@@ -1,6 +1,7 @@
 isUserLoggedIn();
 
 async function isUserLoggedIn(){
+    // checks for logged in user, displays either login form or user banner
     const loggedInUser = await getUser();
     if(loggedInUser.username == null){
         loginForm();   
@@ -8,7 +9,7 @@ async function isUserLoggedIn(){
         userBanner(loggedInUser);
     }
 }
-
+// creates map, centers on southampton
 const map = L.map("map");
 const attrib="Map data copyright OpenStreetMap contributors, Open Database License";
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -16,6 +17,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
 map.setView([50.909698,-1.404351], 14);
 
 async function userBanner(loggedInUser){
+    //Banner for logged in user with logout button
     document.getElementById("user").innerHTML = (`Logged in as: ${loggedInUser.username} <input type="button" value="Logout" id="logoutButton"/>`);
     document.getElementById('logoutButton').addEventListener('click', () =>{
         logoutUser();
@@ -23,6 +25,7 @@ async function userBanner(loggedInUser){
 };
 
 async function loginForm(){
+    // login form, takes username and password and passes to loginUser
     document.getElementById("user").innerHTML = (`Enter login info: 
     <form>
         Username:
@@ -39,6 +42,7 @@ async function loginForm(){
 };
 
 async function showAllPOI(){
+    // Displays every point of interest in the database on the map via a marker
     const response = await fetch(`/poi/all`);
     const pointsofinterest = await response.json();
 
@@ -48,12 +52,15 @@ async function showAllPOI(){
 };
 
 async function regionSearch(region){
+    // fetch request gathers all POI in a in region
     const response = await fetch(`/poi/region/${region}`);
     const pointsofinterest = await response.json();
     if(pointsofinterest.length==0){
+        // error msg
         alert("Nothing found")
     }
     else{
+        // for each POI in region creates a marker
         pointsofinterest.forEach(point => {
             const node1 = document.createElement("p");
             const text1 = document.createTextNode(`ID: ${point.id} Name ${point.name} Type: ${point.type} Desription: ${point.description} Recommendations: ${point.recommendations}`);
@@ -61,7 +68,7 @@ async function regionSearch(region){
             const locateButton = document.createElement("input");
             const reviewBox = document.createElement("input");
             const reviewButton = document.createElement("input");
-
+            //Creates buttons and review box for each POI on the page
             recommendButton.setAttribute("type", "button");
             recommendButton.setAttribute("value", `Recommend`)
             recommendButton.setAttribute("id", `${point.id}`);
@@ -72,14 +79,14 @@ async function regionSearch(region){
             reviewButton.setAttribute("type", "button");
             reviewButton.setAttribute("value", "Review");
             reviewButton.setAttribute("id", `${point.id}`);
-
+            // appends all to node1
             node1.appendChild(text1);
             document.getElementById("results").appendChild(node1);
             document.getElementById("results").appendChild(recommendButton);
             document.getElementById("results").appendChild(locateButton);
             document.getElementById("results").appendChild(reviewBox);
             document.getElementById("results").appendChild(reviewButton);
-    
+            // adds event listeners to each created button 
             recommendButton.addEventListener("click", async(e) => {
                 recommendPOI(point);
             }); 
@@ -96,6 +103,7 @@ async function regionSearch(region){
 };
 
 async function recommendPOI(point){
+    // updates no. of recommendation
     const recommend = {id:point.id, qty:1};
     const response = await fetch (`/poi/recommend/${recommend.id}`,{
     method: 'POST',
@@ -115,10 +123,12 @@ async function recommendPOI(point){
 };
 
 async function reviewPOI(point, id, review){
+    // checks for logged in user
     const user = await getUser();
     if(user.username == null){
         alert("You need to be logged in to leave a review.");   
     }else{
+        // creates a review object
         const region = point.region;
         const reviewObject = {id: id, review: review};
         const response = await fetch (`/poi/review/${reviewObject.id}`,{
@@ -141,6 +151,7 @@ async function reviewPOI(point, id, review){
 };
 
 async function createMarkers(point){
+    // creates marker on map and review button in html
         const marker = L.marker([point.lat, point.lon]).addTo(map);
 
         const node = document.createElement("p");
@@ -166,6 +177,7 @@ async function createMarkers(point){
 }
 
 async function regionPOIs(region){
+    // finds POI in region and sends sends each poi to createMarkers
     const response = await fetch(`/poi/region/${region}`);
     const pointsofinterest = await response.json();
     if(pointsofinterest.length==0){
@@ -180,6 +192,7 @@ async function regionPOIs(region){
 };
 
 async function poiLocate(point){
+    // locates individual POI and centers map on it
     map.setView([point.lat, point.lon], 13);
     createMarkers(point);
 };
@@ -237,6 +250,7 @@ async function addPoiToMap(e){
     if(loggedInUser.username == null){
         alert("Please log in to add POI to map")   
     }else{
+        // prompts user for new POI details
         const name = prompt("Enter name");
         const type = prompt("Enter type");
         const country = prompt("Enter country");
@@ -244,7 +258,7 @@ async function addPoiToMap(e){
         const lon = e.latlng.lng;
         const lat = e.latlng.lat;
         const description = prompt("Enter description");
-    
+    //creates new poi object
         const poi = {
             name: name, 
             type: type, 
